@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Company" ALTER COLUMN "risk" DROP NOT NULL,
+ALTER COLUMN "risk" SET DATA TYPE TEXT;

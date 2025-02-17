@@ -1,0 +1,118 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  password         String
+  name             String?
+  profilePicture   String?
+  wallets          Wallet[]  @relation("UserWallets")
+  role             String    @default("INVESTOR") 
+  address          Address?
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Address {
+  id         String  @id @default(uuid())
+  street     String?
+  number     String?
+  city       String?
+  country    String?
+  postalCode String?
+  userId     String  @unique
+  user       User    @relation(fields: [userId], references: [id])
+}
+
+model Wallet {
+  id           String        @id @default(uuid())
+  name         String
+  balance      Int       @default(0)        
+  fundsAdded   Int       @default(0)         
+  spentAmount  Int       @default(0)         
+  userId       String
+  user         User          @relation("UserWallets", fields: [userId], references: [id], onDelete: Cascade)
+  investments  Investment[]  @relation("WalletInvestments")
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  walletId  String
+  wallet    Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  type      String 
+  amount    Int     
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Investment {
+  id            String    @id @default(uuid())
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id])
+  name          String
+  amount        Int   @default(0)      
+  unitPrice     Int   @default(0)     
+  purchaseDate  DateTime
+  risk          String?
+  profitability Int   @default(0)      
+  walletId      String
+  wallet        Wallet    @relation("WalletInvestments", fields: [walletId], references: [id], onDelete: Cascade)
+  status        String    @default("ACTIVE")
+  sellPrice     Int?    
+  sellDate      DateTime?
+  type          String?  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Company {
+  id            String        @id @default(uuid())
+  name          String
+  description   String?
+  sector        String?
+  website       String?
+  logo          String?
+  stage         String?       
+  unitPrice     Int
+  valuation     Int
+  risk          String?       
+  valuationHistory Json?     
+  debt          Boolean?      
+  debtValue     Int?          
+  investments   Investment[]  
+  tags          Tag[]         @relation("CompanyTags")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  companyTags   CompanyTags[] @relation("CompanyTagsCompany")
+}
+
+model Tag {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  companies   Company[]     @relation("CompanyTags")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  companyTags CompanyTags[] @relation("CompanyTagsTag")
+}
+
+model CompanyTags {
+  companyId String
+  tagId     String
+  company   Company @relation(fields: [companyId], references: [id], name: "CompanyTagsCompany")
+  tag       Tag     @relation(fields: [tagId], references: [id], name: "CompanyTagsTag")
+
+  @@id([companyId, tagId]) 
+}
